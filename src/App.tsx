@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useCallback, useReducer, useMemo } from 'react';
+import { useCallback, useReducer, useMemo, useState, useEffect } from 'react';
 import { gameReducer, initGame } from './state/useGameState';
 import { generate } from './game/generator';
 import { solve } from './game/solver';
@@ -7,7 +7,19 @@ import { Board } from './components/Board';
 import { Controls } from './components/Controls';
 import { Hud } from './components/Hud';
 import { WinOverlay } from './components/WinOverlay';
+import { CELL } from './components/CarPiece';
+import { GRID_SIZE } from './game/types';
 import type { PuzzleDef } from './game/types';
+
+const CELL_MIN = 44;
+const CELL_MAX = 72;
+
+function computeCell(): number {
+  const raw = Math.floor(
+    Math.min(window.innerWidth - 32, window.innerHeight - 220) / GRID_SIZE,
+  );
+  return Math.max(CELL_MIN, Math.min(CELL_MAX, raw));
+}
 
 function newPuzzle(): { puzzle: PuzzleDef; optimal: number } {
   const puzzle = generate({ minOptimal: 6, maxOptimal: 14 });
@@ -21,6 +33,18 @@ export default function App() {
     gameReducer,
     initGame(first.puzzle, first.optimal),
   );
+
+  // Responsive cell size — start with default so tests (no layout pass) get CELL
+  const [cell, setCell] = useState<number>(CELL);
+
+  useEffect(() => {
+    function update() {
+      setCell(computeCell());
+    }
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const onMove = useCallback(
     (carId: string, row: number, col: number) =>
@@ -37,7 +61,7 @@ export default function App() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-100 p-4">
       <Hud moveCount={state.moveCount} optimal={state.optimal} />
       <div className="relative">
-        <Board cars={state.cars} onMove={onMove} />
+        <Board cars={state.cars} cell={cell} onMove={onMove} />
         {state.solved && (
           <WinOverlay
             moveCount={state.moveCount}

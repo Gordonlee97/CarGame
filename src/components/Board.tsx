@@ -6,11 +6,12 @@ import { legalMoves } from '../game/board';
 
 interface BoardProps {
   cars: Car[];
+  cell?: number; // px per grid cell; defaults to CELL constant
   onMove: (carId: string, row: number, col: number) => void;
 }
 
-export function Board({ cars, onMove }: BoardProps) {
-  const size = GRID_SIZE * CELL;
+export function Board({ cars, cell = CELL, onMove }: BoardProps) {
+  const size = GRID_SIZE * cell;
   return (
     <div
       className="relative rounded-2xl bg-slate-800"
@@ -39,6 +40,7 @@ export function Board({ cars, onMove }: BoardProps) {
             key={car.id}
             car={car}
             cars={cars}
+            cell={cell}
             legalRange={{ min, max }}
             onMove={onMove}
           />
