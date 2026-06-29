@@ -1,6 +1,7 @@
 // src/game/solver.test.ts
 import { describe, it, expect } from 'vitest';
 import { solve } from './solver';
+import { applyMove, isSolved } from './board';
 import type { Car } from './types';
 
 const t = (over: Partial<Car>): Car => ({
@@ -39,5 +40,17 @@ describe('solve', () => {
     const top = t({ id: 'B1', orientation: 'v', length: 3, row: 0, col: 3 });
     const bottom = t({ id: 'B2', orientation: 'v', length: 3, row: 3, col: 3 });
     expect(solve([target, top, bottom])).toBeNull();
+  });
+
+  it('returns a path that actually solves the puzzle when applied', () => {
+    const target = t({ id: 'T', orientation: 'h', length: 2, row: 2, col: 0, isTarget: true });
+    const blocker = t({ id: 'B', orientation: 'v', length: 2, row: 1, col: 3 });
+    const res = solve([target, blocker]);
+    expect(res).not.toBeNull();
+    expect(res!.path).toHaveLength(res!.optimal);
+
+    let cars: Car[] = [target, blocker];
+    for (const move of res!.path) cars = applyMove(cars, move);
+    expect(isSolved(cars)).toBe(true);
   });
 });

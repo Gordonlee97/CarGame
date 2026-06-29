@@ -15,18 +15,16 @@ export function solve(cars: Car[]): { optimal: number; path: Move[] } | null {
   const queue: Node[] = [{ key: startKey, cars }];
   // parent[childKey] = { parentKey, move }
   const parent = new Map<string, { parentKey: string; move: Move }>();
-  const byKey = new Map<string, Car[]>([[startKey, cars]]);
 
   while (queue.length > 0) {
-    const { cars: current } = queue.shift()!;
+    const { key: currentKey, cars: current } = queue.shift()!;
     for (const car of current) {
       for (const move of legalMoves(current, car.id)) {
         const nextCars = applyMove(current, move);
         const key = serialize(nextCars);
         if (visited.has(key)) continue;
         visited.add(key);
-        parent.set(key, { parentKey: serialize(current), move });
-        byKey.set(key, nextCars);
+        parent.set(key, { parentKey: currentKey, move });
         if (isSolved(nextCars)) {
           return { optimal: pathLength(parent, key), path: buildPath(parent, key) };
         }
