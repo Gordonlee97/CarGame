@@ -2,6 +2,7 @@
 import { GRID_SIZE } from '../game/types';
 import type { Car } from '../game/types';
 import { CarPiece, CELL } from './CarPiece';
+import { legalMoves } from '../game/board';
 
 interface BoardProps {
   cars: Car[];
@@ -27,9 +28,22 @@ export function Board({ cars, onMove }: BoardProps) {
           <div key={i} className="border border-slate-700/50" />
         ))}
       </div>
-      {cars.map((car) => (
-        <CarPiece key={car.id} car={car} onMove={onMove} />
-      ))}
+      {cars.map((car) => {
+        const moves = legalMoves(cars, car.id);
+        const axisVals = moves.map((m) => (car.orientation === 'h' ? m.col : m.row));
+        const cur = car.orientation === 'h' ? car.col : car.row;
+        const min = Math.min(cur, ...axisVals);
+        const max = Math.max(cur, ...axisVals);
+        return (
+          <CarPiece
+            key={car.id}
+            car={car}
+            cars={cars}
+            legalRange={{ min, max }}
+            onMove={onMove}
+          />
+        );
+      })}
     </div>
   );
 }
