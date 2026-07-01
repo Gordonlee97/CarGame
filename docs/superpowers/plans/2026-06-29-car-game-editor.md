@@ -170,10 +170,11 @@ describe('editorReducer', () => {
   });
 
   it('places a legal piece', () => {
-    const s0 = initEditor();
+    const s0 = initEditor(); // target at row 2 col 0-1
     const s1 = editorReducer(s0, {
       type: 'PLACE',
-      piece: { orientation: 'v', length: 3, row: 0, col: 0 },
+      // vertical truck at col 2 -> cells (0,2),(1,2),(2,2); no overlap with target
+      piece: { orientation: 'v', length: 3, row: 0, col: 2 },
     });
     expect(s1.cars).toHaveLength(2);
   });
