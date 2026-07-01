@@ -29,8 +29,8 @@ describe('App', () => {
   it('switches to the create view', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('button', { name: /create/i }));
-    // Create view offers the palette
-    expect(screen.getByRole('button', { name: /add car/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add truck/i })).toBeInTheDocument();
+    // Create view offers the draggable vehicle bank
+    expect(screen.getByTestId('bank-car-h')).toBeInTheDocument();
+    expect(screen.getByTestId('bank-truck-v')).toBeInTheDocument();
   });
 });

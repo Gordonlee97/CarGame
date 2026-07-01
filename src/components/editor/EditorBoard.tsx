@@ -1,6 +1,6 @@
 // src/components/editor/EditorBoard.tsx
 import { motion, useMotionValue } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { GRID_SIZE, EXIT_ROW } from '../../game/types';
 import type { Car } from '../../game/types';
 
@@ -8,13 +8,13 @@ interface EditorBoardProps {
   cars: Car[];
   cell: number;
   selectedId: string | null;
+  boardRef: React.RefObject<HTMLDivElement | null>;
   onSelect: (id: string) => void;
   onMove: (id: string, row: number, col: number) => void;
 }
 
-export function EditorBoard({ cars, cell, selectedId, onSelect, onMove }: EditorBoardProps) {
+export function EditorBoard({ cars, cell, selectedId, boardRef, onSelect, onMove }: EditorBoardProps) {
   const size = GRID_SIZE * cell;
-  const boardRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
@@ -72,6 +72,7 @@ function EditorPiece({ car, cell, boardRef, selected, onSelect, onMove }: Editor
     <motion.div
       data-testid={`editor-car-${car.id}`}
       data-target={car.isTarget}
+      draggable={false}
       drag
       dragConstraints={boardRef}
       dragMomentum={false}

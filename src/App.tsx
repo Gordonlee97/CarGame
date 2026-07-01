@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlayView } from './views/PlayView';
 import { CreateView } from './views/CreateView';
 import { LevelsView } from './views/LevelsView';
@@ -18,6 +18,15 @@ export default function App() {
   const [customLevel, setCustomLevel] = useState<{ cars: Car[]; optimal: number } | undefined>();
   const [playKey, setPlayKey] = useState(0);
 
+  // The app drags via Framer's pointer gestures only — never native HTML DnD.
+  // Suppress native drag globally so a stray dragstart can't leave the browser
+  // stuck in a "no-drop" drag state (cursor turns to 🚫 until you click away).
+  useEffect(() => {
+    const prevent = (e: DragEvent) => e.preventDefault();
+    window.addEventListener('dragstart', prevent);
+    return () => window.removeEventListener('dragstart', prevent);
+  }, []);
+
   const playCustom = (id: string) => {
     const lvl = getLevel(id);
     if (!lvl) return;
@@ -27,7 +36,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 bg-slate-100 p-4">
+    <div className="flex min-h-screen select-none flex-col items-center gap-6 bg-slate-100 p-4">
       <nav className="flex gap-3">
         <button className={tab(view === 'play')} onClick={() => setView('play')}>
           Play

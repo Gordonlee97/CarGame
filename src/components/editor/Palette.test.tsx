@@ -1,16 +1,14 @@
 // src/components/editor/Palette.test.tsx
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Palette } from './Palette';
 
 describe('Palette', () => {
-  it('offers car and truck and fires the add callback', async () => {
-    const onAdd = vi.fn();
-    render(<Palette onAdd={onAdd} />);
-    await userEvent.click(screen.getByRole('button', { name: /add car/i }));
-    expect(onAdd).toHaveBeenCalledWith({ orientation: 'h', length: 2 });
-    await userEvent.click(screen.getByRole('button', { name: /add truck/i }));
-    expect(onAdd).toHaveBeenCalledWith({ orientation: 'h', length: 3 });
+  it('offers four draggable vehicles (car/truck x horizontal/vertical)', () => {
+    render(<Palette cell={56} onDrop={() => {}} />);
+    expect(screen.getByTestId('bank-car-h')).toBeInTheDocument();
+    expect(screen.getByTestId('bank-car-v')).toBeInTheDocument();
+    expect(screen.getByTestId('bank-truck-h')).toBeInTheDocument();
+    expect(screen.getByTestId('bank-truck-v')).toBeInTheDocument();
   });
 });

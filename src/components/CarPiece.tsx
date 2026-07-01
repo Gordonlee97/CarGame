@@ -48,6 +48,7 @@ export function CarPiece({ car, legalRange, cell, exiting = false, onMove }: Car
     <motion.div
       data-testid={`car-${car.id}`}
       data-target={car.isTarget}
+      draggable={false}
       drag={exiting ? false : axis}
       dragMomentum={false}
       dragElastic={0}
