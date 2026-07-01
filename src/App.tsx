@@ -44,13 +44,34 @@ export default function App() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  // Let the winning car drive out through the exit before showing the win overlay.
+  const [showWin, setShowWin] = useState(false);
+  useEffect(() => {
+    if (!state.solved) {
+      setShowWin(false);
+      return;
+    }
+    const t = setTimeout(() => setShowWin(true), 750);
+    return () => clearTimeout(t);
+  }, [state.solved]);
+
+  // Bumped on reset / new puzzle so the Board (and its cars' animation state)
+  // remounts cleanly — avoids leftover exit-animation state on the target car.
+  const [runId, setRunId] = useState(0);
+
   const onMove = useCallback(
     (carId: string, row: number, col: number) =>
       dispatch({ type: 'MOVE_CAR', move: { carId, row, col } }),
     [],
   );
 
+  const onReset = useCallback(() => {
+    setRunId((r) => r + 1);
+    dispatch({ type: 'RESET' });
+  }, []);
+
   const onRandom = useCallback(() => {
+    setRunId((r) => r + 1);
     const { puzzle, optimal } = newPuzzle();
     dispatch({ type: 'NEW_PUZZLE', puzzle, optimal });
   }, []);
@@ -59,18 +80,19 @@ export default function App() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-100 p-4">
       <Hud moveCount={state.moveCount} optimal={state.optimal} />
       <div className="relative">
-        <Board cars={state.cars} cell={cell} onMove={onMove} />
-        {state.solved && (
+        <Board key={runId} cars={state.cars} cell={cell} solved={state.solved} onMove={onMove} />
+        {showWin && state.solved && (
           <WinOverlay
             moveCount={state.moveCount}
             optimal={state.optimal}
-            onPlayAgain={onRandom}
+            onRetry={onReset}
+            onNext={onRandom}
           />
         )}
       </div>
       <Controls
         onRandom={onRandom}
-        onReset={() => dispatch({ type: 'RESET' })}
+        onReset={onReset}
         onUndo={() => dispatch({ type: 'UNDO' })}
         canUndo={state.history.length > 0}
       />

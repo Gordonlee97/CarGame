@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 interface WinOverlayProps {
   moveCount: number;
   optimal: number;
-  onPlayAgain: () => void;
+  onRetry: () => void; // replay the same puzzle from its start
+  onNext: () => void; // load a new puzzle
 }
 
-export function WinOverlay({ moveCount, optimal, onPlayAgain }: WinOverlayProps) {
+export function WinOverlay({ moveCount, optimal, onRetry, onNext }: WinOverlayProps) {
   const perfect = moveCount === optimal;
   return (
     <motion.div
@@ -26,12 +27,20 @@ export function WinOverlay({ moveCount, optimal, onPlayAgain }: WinOverlayProps)
           {moveCount} moves · optimal {optimal}
         </p>
         {perfect && <p className="mt-1 font-semibold text-emerald-600">Perfect!</p>}
-        <button
-          className="mt-5 rounded-full bg-red-500 px-6 py-2 font-medium text-white shadow active:scale-95"
-          onClick={onPlayAgain}
-        >
-          Play again
-        </button>
+        <div className="mt-5 flex justify-center gap-3">
+          <button
+            className="rounded-full bg-slate-200 px-5 py-2 font-medium text-slate-700 active:scale-95"
+            onClick={onRetry}
+          >
+            Try again
+          </button>
+          <button
+            className="rounded-full bg-red-500 px-5 py-2 font-medium text-white shadow active:scale-95"
+            onClick={onNext}
+          >
+            Next puzzle
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );

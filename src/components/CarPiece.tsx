@@ -1,7 +1,8 @@
 // src/components/CarPiece.tsx
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { useEffect } from 'react';
 import type { Car } from '../game/types';
+import { GRID_SIZE } from '../game/types';
 
 export const CELL = 56; // default px per grid cell (used as fallback)
 
@@ -9,19 +10,37 @@ interface CarPieceProps {
   car: Car;
   cell: number; // px per grid cell
   legalRange: { min: number; max: number }; // anchor min/max along the car's axis
+  exiting?: boolean; // when true, drive out through the exit gap (target car on win)
   onMove: (carId: string, row: number, col: number) => void;
 }
 
-export function CarPiece({ car, legalRange, cell, onMove }: CarPieceProps) {
+export function CarPiece({ car, legalRange, cell, exiting = false, onMove }: CarPieceProps) {
   const w = car.orientation === 'h' ? car.length : 1;
   const h = car.orientation === 'v' ? car.length : 1;
   const x = useMotionValue(car.col * cell);
   const y = useMotionValue(car.row * cell);
+  const opacity = useMotionValue(1);
 
+  // Keep the motion values in sync with the car's grid position — but don't fight
+  // the exit animation while it's playing.
   useEffect(() => {
+    if (exiting) return;
     x.set(car.col * cell);
     y.set(car.row * cell);
-  }, [car.col, car.row, cell, x, y]);
+    opacity.set(1);
+  }, [car.col, car.row, cell, exiting, x, y, opacity]);
+
+  // Win: drive the car right, out through the exit gap, and fade it away.
+  useEffect(() => {
+    if (!exiting) return;
+    const exitX = (GRID_SIZE + 2) * cell; // well past the right wall
+    const driveX = animate(x, exitX, { duration: 0.7, ease: 'easeIn' });
+    const fade = animate(opacity, 0, { duration: 0.5, delay: 0.35, ease: 'easeIn' });
+    return () => {
+      driveX.stop();
+      fade.stop();
+    };
+  }, [exiting, cell, x, opacity]);
 
   const axis = car.orientation === 'h' ? 'x' : 'y';
 
@@ -29,7 +48,7 @@ export function CarPiece({ car, legalRange, cell, onMove }: CarPieceProps) {
     <motion.div
       data-testid={`car-${car.id}`}
       data-target={car.isTarget}
-      drag={axis}
+      drag={exiting ? false : axis}
       dragMomentum={false}
       dragElastic={0}
       dragConstraints={{
@@ -40,14 +59,14 @@ export function CarPiece({ car, legalRange, cell, onMove }: CarPieceProps) {
       }}
       whileDrag={{ scale: 1.04 }}
       style={{
-        x, y,
+        x, y, opacity,
         width: w * cell - 8,
         height: h * cell - 8,
         marginLeft: 4,
         marginTop: 4,
         position: 'absolute',
       }}
-      className={`rounded-xl shadow-md cursor-grab active:cursor-grabbing ${
+      className={`rounded-xl shadow-md ${exiting ? '' : 'cursor-grab active:cursor-grabbing'} ${
         car.isTarget ? 'bg-red-500' : 'bg-slate-400'
       }`}
       onDragEnd={() => {
