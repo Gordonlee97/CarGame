@@ -1,5 +1,7 @@
 // src/components/editor/EditorBoard.tsx
-import { GRID_SIZE } from '../../game/types';
+import { motion, useMotionValue } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { GRID_SIZE, EXIT_ROW } from '../../game/types';
 import type { Car } from '../../game/types';
 
 interface EditorBoardProps {
@@ -10,10 +12,16 @@ interface EditorBoardProps {
   onMove: (id: string, row: number, col: number) => void;
 }
 
-export function EditorBoard({ cars, cell, selectedId, onSelect, onMove: _onMove }: EditorBoardProps) {
+export function EditorBoard({ cars, cell, selectedId, onSelect, onMove }: EditorBoardProps) {
   const size = GRID_SIZE * cell;
+  const boardRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="relative rounded-2xl bg-slate-800" style={{ width: size, height: size }}>
+    <div
+      ref={boardRef}
+      className="relative touch-none rounded-2xl bg-slate-800"
+      style={{ width: size, height: size }}
+    >
       <div
         className="absolute inset-0 grid"
         style={{
@@ -25,26 +33,72 @@ export function EditorBoard({ cars, cell, selectedId, onSelect, onMove: _onMove 
           <div key={i} className="border border-slate-700/50" />
         ))}
       </div>
-      {cars.map((car) => {
-        const w = car.orientation === 'h' ? car.length : 1;
-        const h = car.orientation === 'v' ? car.length : 1;
-        const selected = car.id === selectedId;
-        return (
-          <button
-            key={car.id}
-            data-testid={`editor-car-${car.id}`}
-            onClick={() => onSelect(car.id)}
-            className={`absolute rounded-xl shadow-md ${
-              car.isTarget ? 'bg-red-500' : 'bg-slate-400'
-            } ${selected ? 'ring-4 ring-amber-400' : ''}`}
-            style={{
-              width: w * cell - 8,
-              height: h * cell - 8,
-              transform: `translate(${car.col * cell + 4}px, ${car.row * cell + 4}px)`,
-            }}
-          />
-        );
-      })}
+      {cars.map((car) => (
+        <EditorPiece
+          key={car.id}
+          car={car}
+          cell={cell}
+          boardRef={boardRef}
+          selected={car.id === selectedId}
+          onSelect={onSelect}
+          onMove={onMove}
+        />
+      ))}
     </div>
+  );
+}
+
+interface EditorPieceProps {
+  car: Car;
+  cell: number;
+  boardRef: React.RefObject<HTMLDivElement | null>;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  onMove: (id: string, row: number, col: number) => void;
+}
+
+function EditorPiece({ car, cell, boardRef, selected, onSelect, onMove }: EditorPieceProps) {
+  const w = car.orientation === 'h' ? car.length : 1;
+  const h = car.orientation === 'v' ? car.length : 1;
+  const x = useMotionValue(car.col * cell);
+  const y = useMotionValue(car.row * cell);
+
+  useEffect(() => {
+    x.set(car.col * cell);
+    y.set(car.row * cell);
+  }, [car.col, car.row, cell, x, y]);
+
+  return (
+    <motion.div
+      data-testid={`editor-car-${car.id}`}
+      data-target={car.isTarget}
+      drag
+      dragConstraints={boardRef}
+      dragMomentum={false}
+      dragElastic={0}
+      onTap={() => onSelect(car.id)}
+      whileDrag={{ scale: 1.05, zIndex: 20 }}
+      style={{
+        x, y,
+        width: w * cell - 8,
+        height: h * cell - 8,
+        marginLeft: 4,
+        marginTop: 4,
+        position: 'absolute',
+      }}
+      className={`rounded-xl shadow-md cursor-grab active:cursor-grabbing ${
+        car.isTarget ? 'bg-red-500' : 'bg-slate-400'
+      } ${selected ? 'z-10 ring-4 ring-amber-400' : ''}`}
+      onDragEnd={() => {
+        const col = Math.round(x.get() / cell);
+        // The target stays on the exit row (that's where the puzzle's exit is).
+        const row = car.isTarget ? EXIT_ROW : Math.round(y.get() / cell);
+        // Reset to the current grid position; if onMove is accepted the prop change
+        // repositions via the effect, if rejected the piece snaps back here.
+        x.set(car.col * cell);
+        y.set(car.row * cell);
+        onMove(car.id, row, col);
+      }}
+    />
   );
 }

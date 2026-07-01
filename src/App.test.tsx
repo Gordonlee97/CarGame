@@ -1,9 +1,9 @@
 // src/App.test.tsx
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
-// Feed the App a fixed puzzle so the smoke test is deterministic and doesn't
-// depend on the contents of the generated pool.
+// Feed PlayView a fixed puzzle so the smoke test is deterministic.
 vi.mock('./game/puzzles', () => ({
   randomPuzzle: () => ({
     cars: [
@@ -18,10 +18,19 @@ vi.mock('./game/puzzles', () => ({
 import App from './App';
 
 describe('App', () => {
-  it('renders a board and controls on load', () => {
+  it('shows the nav and a play board by default', () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: /random/i })).toBeInTheDocument();
-    // at least the target car renders
+    expect(screen.getByRole('button', { name: /^play$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /my levels/i })).toBeInTheDocument();
     expect(screen.getByTestId('car-T')).toBeInTheDocument();
+  });
+
+  it('switches to the create view', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', { name: /create/i }));
+    // Create view offers the palette
+    expect(screen.getByRole('button', { name: /add car/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add truck/i })).toBeInTheDocument();
   });
 });

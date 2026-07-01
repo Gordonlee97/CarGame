@@ -1,101 +1,48 @@
 // src/App.tsx
-import { useCallback, useReducer, useMemo, useState, useEffect } from 'react';
-import { gameReducer, initGame } from './state/useGameState';
-import { randomPuzzle } from './game/puzzles';
-import { Board } from './components/Board';
-import { Controls } from './components/Controls';
-import { Hud } from './components/Hud';
-import { WinOverlay } from './components/WinOverlay';
-import { CELL } from './components/CarPiece';
-import { GRID_SIZE } from './game/types';
-import type { PuzzleDef } from './game/types';
+import { useState } from 'react';
+import { PlayView } from './views/PlayView';
+import { CreateView } from './views/CreateView';
+import { LevelsView } from './views/LevelsView';
+import { getLevel } from './storage/levels';
+import type { Car } from './game/types';
 
-const CELL_MIN = 44;
-const CELL_MAX = 72;
+type View = 'play' | 'create' | 'levels';
 
-function computeCell(): number {
-  const raw = Math.floor(
-    Math.min(window.innerWidth - 32, window.innerHeight - 220) / GRID_SIZE,
-  );
-  return Math.max(CELL_MIN, Math.min(CELL_MAX, raw));
-}
-
-function newPuzzle(): { puzzle: PuzzleDef; optimal: number } {
-  const p = randomPuzzle();
-  return { puzzle: { id: 'pool', cars: p.cars }, optimal: p.optimal };
-}
+const tab = (active: boolean) =>
+  `px-4 py-2 rounded-full font-medium transition ${
+    active ? 'bg-red-500 text-white shadow' : 'bg-slate-200 hover:bg-slate-300'
+  }`;
 
 export default function App() {
-  const first = useMemo(() => newPuzzle(), []);
-  const [state, dispatch] = useReducer(
-    gameReducer,
-    initGame(first.puzzle, first.optimal),
-  );
+  const [view, setView] = useState<View>('play');
+  const [customLevel, setCustomLevel] = useState<{ cars: Car[]; optimal: number } | undefined>();
+  const [playKey, setPlayKey] = useState(0);
 
-  // Responsive cell size — start with default so tests (no layout pass) get CELL
-  const [cell, setCell] = useState<number>(CELL);
-
-  useEffect(() => {
-    function update() {
-      setCell(computeCell());
-    }
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  // Let the winning car drive out through the exit before showing the win overlay.
-  const [showWin, setShowWin] = useState(false);
-  useEffect(() => {
-    if (!state.solved) {
-      setShowWin(false);
-      return;
-    }
-    const t = setTimeout(() => setShowWin(true), 750);
-    return () => clearTimeout(t);
-  }, [state.solved]);
-
-  // Bumped on reset / new puzzle so the Board (and its cars' animation state)
-  // remounts cleanly — avoids leftover exit-animation state on the target car.
-  const [runId, setRunId] = useState(0);
-
-  const onMove = useCallback(
-    (carId: string, row: number, col: number) =>
-      dispatch({ type: 'MOVE_CAR', move: { carId, row, col } }),
-    [],
-  );
-
-  const onReset = useCallback(() => {
-    setRunId((r) => r + 1);
-    dispatch({ type: 'RESET' });
-  }, []);
-
-  const onRandom = useCallback(() => {
-    setRunId((r) => r + 1);
-    const { puzzle, optimal } = newPuzzle();
-    dispatch({ type: 'NEW_PUZZLE', puzzle, optimal });
-  }, []);
+  const playCustom = (id: string) => {
+    const lvl = getLevel(id);
+    if (!lvl) return;
+    setCustomLevel({ cars: lvl.cars, optimal: lvl.optimal });
+    setPlayKey((k) => k + 1); // remount PlayView with the custom level
+    setView('play');
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-100 p-4">
-      <Hud moveCount={state.moveCount} optimal={state.optimal} />
-      <div className="relative">
-        <Board key={runId} cars={state.cars} cell={cell} solved={state.solved} onMove={onMove} />
-        {showWin && state.solved && (
-          <WinOverlay
-            moveCount={state.moveCount}
-            optimal={state.optimal}
-            onRetry={onReset}
-            onNext={onRandom}
-          />
-        )}
-      </div>
-      <Controls
-        onRandom={onRandom}
-        onReset={onReset}
-        onUndo={() => dispatch({ type: 'UNDO' })}
-        canUndo={state.history.length > 0}
-      />
+    <div className="flex min-h-screen flex-col items-center gap-6 bg-slate-100 p-4">
+      <nav className="flex gap-3">
+        <button className={tab(view === 'play')} onClick={() => setView('play')}>
+          Play
+        </button>
+        <button className={tab(view === 'create')} onClick={() => setView('create')}>
+          Create
+        </button>
+        <button className={tab(view === 'levels')} onClick={() => setView('levels')}>
+          My Levels
+        </button>
+      </nav>
+
+      {view === 'play' && <PlayView key={playKey} initialLevel={customLevel} />}
+      {view === 'create' && <CreateView onSaved={() => setView('levels')} />}
+      {view === 'levels' && <LevelsView onPlay={playCustom} />}
     </div>
   );
 }
