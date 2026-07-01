@@ -1,8 +1,7 @@
 // src/App.tsx
 import { useCallback, useReducer, useMemo, useState, useEffect } from 'react';
 import { gameReducer, initGame } from './state/useGameState';
-import { generate } from './game/generator';
-import { solve } from './game/solver';
+import { randomPuzzle } from './game/puzzles';
 import { Board } from './components/Board';
 import { Controls } from './components/Controls';
 import { Hud } from './components/Hud';
@@ -22,9 +21,8 @@ function computeCell(): number {
 }
 
 function newPuzzle(): { puzzle: PuzzleDef; optimal: number } {
-  const puzzle = generate({ minOptimal: 6, maxOptimal: 14 });
-  const optimal = solve(puzzle.cars)!.optimal;
-  return { puzzle, optimal };
+  const p = randomPuzzle();
+  return { puzzle: { id: 'pool', cars: p.cars }, optimal: p.optimal };
 }
 
 export default function App() {

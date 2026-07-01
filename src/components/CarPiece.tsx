@@ -2,13 +2,11 @@
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect } from 'react';
 import type { Car } from '../game/types';
-import { GRID_SIZE } from '../game/types';
 
 export const CELL = 56; // default px per grid cell (used as fallback)
 
 interface CarPieceProps {
   car: Car;
-  cars: Car[];
   cell: number; // px per grid cell
   legalRange: { min: number; max: number }; // anchor min/max along the car's axis
   onMove: (carId: string, row: number, col: number) => void;
@@ -66,8 +64,4 @@ export function CarPiece({ car, legalRange, cell, onMove }: CarPieceProps) {
       }}
     />
   );
-}
-
-export function clampCell(v: number) {
-  return Math.max(0, Math.min(GRID_SIZE - 1, v));
 }

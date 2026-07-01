@@ -191,6 +191,33 @@ dependency in v1 (router is the upgrade path for shareable URLs).
 - **Phase 2 — Editor:** editor state, palette/editor components, storage, My Levels.
   Built entirely on Phase 1's board + solver with no rework.
 
+## Addendum (2026-06-30): Generation is a precomputed pool
+
+Live procedural generation proved too slow and high-variance on a 6×6 board: the
+BFS needed to guarantee solvability and compute exact optimal "par" explodes on
+"loose" boards (large reachable state spaces), causing multi-second UI-thread
+freezes — at odds with the snappy/polished goal. Several algorithmic attempts
+(depth-bounded solve, reverse-generation, random-walk + node-capped solve) bounded
+the median but not the worst case for harder puzzles.
+
+**Decision:** generate the puzzles **offline at build time** and ship them as a
+static pool; the runtime picks from it instantly with no BFS.
+
+- `scripts/generate-puzzles.ts` (run via `npm run gen:puzzles`) generates a pool
+  with a wide acceptance band and labels difficulty post-hoc from each puzzle's
+  computed optimal (narrow high-optimal bands cause a rejection storm). It caps the
+  common "easy" bucket to force the rarer medium/hard puzzles into the pool, with an
+  attempt budget + padding so the build always terminates. Output: `src/game/puzzles.json`
+  (committed).
+- `src/game/generator.ts` + `solve(cars, maxDepth?, maxNodes?)` remain (used by the
+  build script and the editor's solvability check), now with depth- and node-bounds.
+- `src/game/puzzles.ts` exposes `randomPuzzle()` over the pool; `App` uses it instead
+  of live `generate()`/`solve()`.
+
+Trade-off accepted: "infinite procedural content" becomes a large finite pool
+(regenerable/expandable by re-running the build). Difficulty spread is whatever the
+generator naturally produces (skews easy; hard puzzles are sparse).
+
 ## Deferred / Future
 
 - Shareable level codes or URLs (serialize `PuzzleDef` into a short string; add router).

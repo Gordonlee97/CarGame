@@ -39,7 +39,6 @@ export function Board({ cars, cell = CELL, onMove }: BoardProps) {
           <CarPiece
             key={car.id}
             car={car}
-            cars={cars}
             cell={cell}
             legalRange={{ min, max }}
             onMove={onMove}
